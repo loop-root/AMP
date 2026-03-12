@@ -25,11 +25,14 @@ authority.
 
 This RFC applies to:
 
+- active continuity stream semantics
+- control-plane inspector derivation boundary
 - `memory_artifact`
 - `distillate`
 - `wake_state`
 - `resonate_key`
 - `memory_ref`
+- recall bundle projections
 - memory dereference and recall operations
 - client-local versus AMP-governed memory authority
 
@@ -51,14 +54,97 @@ requirements.
 The continuity and memory model is built around the following
 principles:
 
+- continuity is modeled as an append-only active stream
 - memory artifacts are derived artifacts, not truth sources
 - references identify memory objects without granting dereference or
   inclusion rights
 - continuity is bounded, attributable, and auditable
+- the control-plane inspector is the derivation boundary between
+  transient continuity flow and durable memory artifacts
 - wake states do not restore authority or revive expired objects
 - exact-key recall is governed dereference, not a shortcut around policy
+- projections may re-enter active context only by governed reference or
+  bounded inclusion
+- continuity artifacts and recall handles never become authority
 - client-local memory views are projections or suggestions, not
   authority
+
+### 4.1 Active continuity stream
+
+Within an AMP authority context, continuity during active operation MUST
+be modeled as an append-only active stream.
+
+The active stream MAY include:
+
+- operator messages
+- model outputs
+- tool results
+- continuity annotations
+- other attributable observations within the authority path
+
+Active-stream rules:
+
+- stream ordering MUST remain monotonic within the authority context
+- items in the active stream MUST remain attributable
+- active-stream presence alone MUST NOT create durable memory authority
+- active-stream presence alone MUST NOT imply prompt inclusion,
+  dereference rights, or trust elevation
+
+The active stream is the transient continuity flow from which durable
+memory artifacts may later be derived. It is not itself a permission
+grant.
+
+### 4.2 Control-plane inspector
+
+The control-plane inspector is the control-plane-owned derivation
+boundary between transient active continuity flow and durable memory
+artifacts.
+
+For privileged use, only the control-plane inspector or an equivalent
+control-plane-owned derivation path MAY:
+
+- inspect bounded active-stream windows
+- inspect explicit source sets of artifacts or events
+- derive or accept authoritative distillates
+- derive or accept authoritative resonate keys
+- derive or accept authoritative wake states
+
+Client-local summarizers, ranking helpers, and continuity views MAY
+propose hints, but for privileged use they remain untrusted content
+until rebound through the control-plane inspector path.
+
+### 4.3 Derived continuity forms
+
+The continuity pipeline produces bounded derived forms rather than
+ambient memory authority.
+
+Derived continuity rules:
+
+- distillates are derived from bounded active-stream windows or explicit
+  source sets with preserved lineage
+- resonate keys are bounded retrieval handles over eligible distillates
+  or equivalent bounded derived continuity results
+- wake states encode bounded resumption projections assembled from
+  derived forms and continuity metadata
+- recall bundles are bounded projections assembled from derived forms
+  and continuity metadata
+
+### 4.4 Reintroduction into active context
+
+Derived continuity forms and bounded projections MAY be reintroduced into
+active context only by governed reference or bounded inclusion.
+
+Reintroduction rules:
+
+- reintroduction MUST preserve lineage to contributing artifacts,
+  references, or source windows
+- reintroduction MUST remain bounded, attributable, and auditable
+- reintroduction MUST NOT convert a continuity artifact or recall handle
+  into authority
+- reintroduction MUST NOT revive expired, revoked, or terminated
+  authority
+- reintroduction MUST NOT bypass prompt-inclusion or execution-inclusion
+  policy
 
 ## 5. Taxonomy
 
@@ -79,12 +165,15 @@ Every memory artifact MUST preserve:
 ### 5.2 Distillate
 
 A `distillate` is a memory artifact containing bounded derived continuity
-content synthesized from one or more source artifacts or events.
+content synthesized from a bounded active-stream window or an explicit
+source set of artifacts or events.
 
 A distillate:
 
 - is provenance-bearing
 - is bounded in scope
+- preserves lineage to the bounded stream window or explicit source set
+  from which it was derived
 - does not become truth by persistence alone
 - does not grant prompt inclusion by existence alone
 
@@ -92,6 +181,11 @@ A distillate:
 
 A `wake_state` is a memory artifact representing a bounded resumption
 bundle for a continuity context.
+
+Normatively, a `wake_state` remains a `memory_artifact`, but its use in
+active context is a bounded projection assembled from derived continuity
+forms and continuity metadata rather than a restoration of raw prior
+context.
 
 Normatively, `wake_state` is a subtype of `memory_artifact`.
 
@@ -108,11 +202,13 @@ shorthand. The normative hierarchy is:
 ### 5.4 Resonate key
 
 A `resonate_key` is a memory artifact containing a bounded recall
-selector or retrieval handle derived from source continuity state.
+selector or retrieval handle for eligible distillates or equivalent
+bounded derived continuity results derived from source continuity state.
 
 A resonate key:
 
 - is a durable derived object
+- is a bounded retrieval handle rather than raw authority-bearing memory
 - is not equivalent to the memory it may later help retrieve
 - does not imply automatic recall, prompt inclusion, or truth
 
@@ -175,11 +271,13 @@ operations that affect:
 
 For those operations, the control plane MUST own:
 
+- inspection and derivation from the active continuity stream
 - memory artifact creation or acceptance
 - classification
 - dereference authorization
 - recall resolution
 - prompt inclusion decisions
+- assembly of wake-state or recall-bundle projections for privileged use
 - lifecycle transitions affecting availability or use
 
 ### 7.2 Unprivileged client behavior
@@ -211,6 +309,8 @@ exact-key recall remain partly client-local today.
 The target AMP state defined by this RFC is:
 
 - authoritative memory dereference belongs to the control plane
+- authoritative continuity derivation belongs to the control-plane
+  inspector path
 - client-local continuity data remains a projection or suggestion only
 - any client-proposed memory content used in privileged flows must be
   revalidated and rebound through AMP-governed memory objects
@@ -255,7 +355,23 @@ Recall resolution:
 - MUST be bounded in output size
 - MUST preserve provenance for the returned results
 
-### 8.4 Prompt or execution inclusion
+### 8.4 Projection reintroduction
+
+A materialized wake-state result or recall bundle is a bounded
+projection assembled from derived continuity forms and continuity
+metadata.
+
+Projection reintroduction rules:
+
+- a projection MAY be reintroduced into active context only by governed
+  reference or bounded inclusion
+- a projection MUST preserve lineage to contributing distillates,
+  resonate keys, memory refs, and source windows where applicable
+- a projection MUST remain bounded and attributable
+- a projection MUST NOT become policy authority, prompt authority, or
+  current truth solely by being assembled or reintroduced
+
+### 8.5 Prompt or execution inclusion
 
 Prompt inclusion or execution inclusion is a separate governed step.
 
@@ -272,11 +388,13 @@ A distillate MUST remain bounded and provenance-bearing.
 
 Distillate rules:
 
-- it MUST identify the source set or source window from which it was
-  derived
+- it MUST identify the bounded source set or bounded source window from
+  which it was derived
 - it MUST carry derivation classification
 - it MUST NOT overwrite or replace the authoritative source history
 - it MUST NOT be treated as current truth solely because it is durable
+- it MUST preserve lineage sufficient to reconstruct the relevant source
+  window or source-set membership
 
 If a distillate is later pruned as bytes:
 
@@ -288,6 +406,10 @@ If a distillate is later pruned as bytes:
 A wake state is a resumable continuity package, not a restored authority
 context.
 
+Its materialized use is a bounded projection assembled from distillates,
+resonate keys, memory refs, and continuity metadata rather than a direct
+reinstatement of prior active context.
+
 Wake-state rules:
 
 - loading a wake state MUST NOT recreate expired or revoked approvals
@@ -295,6 +417,11 @@ Wake-state rules:
 - loading a wake state MUST NOT recreate prior scoped tokens
 - loading a wake state MAY return bounded memory refs, derived content,
   or continuity metadata
+- loading a wake state MUST preserve lineage to the derived forms from
+  which its projection is assembled
+- a materialized wake-state projection MAY be reintroduced into active
+  context only by governed reference or bounded inclusion
+- a materialized wake-state projection MUST remain non-authoritative
 - using a wake state in a privileged flow requires fresh policy
   evaluation at use time
 
@@ -310,13 +437,22 @@ Wake states SHOULD record:
 ### 11.1 Resonate-key semantics
 
 A resonate key is a bounded memory artifact that stores a canonical
-recall selector.
+recall selector for eligible distillates or equivalent bounded derived
+continuity results.
+
+An eligible distillate is a distillate whose use remains permitted by:
+
+- current policy
+- current classification and scope
+- current storage state
+- current subject or session binding where applicable
 
 The selector itself:
 
 - is not content authority
 - is not prompt authority
 - is not a trust upgrade
+- is not raw authority-bearing memory
 
 ### 11.2 Exact-key recall
 
@@ -328,6 +464,8 @@ Exact-key recall MUST:
 - validate the caller's authority and policy
 - use the control plane's authoritative key resolution path for
   privileged use
+- resolve only against eligible distillates or equivalent bounded
+  derived continuity results
 - return a bounded result set or a typed denial
 - preserve provenance for returned artifacts or refs
 
@@ -351,6 +489,21 @@ For privileged use, the control plane MUST treat that proposal as:
 The control plane MUST perform its own authoritative resolution before
 the result may affect privileged execution.
 
+### 11.4 Recall bundles
+
+A recall bundle is an ephemeral bounded projection assembled from one or
+more eligible distillates, associated memory refs, resonate-key
+resolution results, and continuity metadata.
+
+A recall bundle:
+
+- is not a new authority-bearing object class
+- MAY be returned as a bounded result of governed recall
+- MAY be reintroduced into active context only by governed reference or
+  bounded inclusion
+- MUST preserve lineage to contributing derived forms
+- MUST NOT be treated as truth, permission, or self-authorizing memory
+
 ## 12. Morph-Local Versus AMP-Governed Memory
 
 This RFC uses neutral terms, but the current product split can be stated
@@ -370,6 +523,8 @@ it MUST ensure that:
 
 - those operations do not create ambient authority
 - privileged use still flows through control-plane validation
+- client-local continuity outputs remain non-authoritative until
+  rederived or accepted by the control-plane inspector path
 - local summaries, wake-state views, and recall hints are treated as
   content rather than authority
 
@@ -399,9 +554,12 @@ The following memory-related actions are security-relevant and SHOULD be
 observable through the append-only event stream using RFC 0004 event
 envelopes:
 
+- control-plane inspector derivation from active stream to distillate,
+  resonate key, or wake state
 - memory artifact creation
 - wake-state load for privileged use
 - exact-key recall resolution for privileged use
+- recall-bundle assembly or projection reintroduction for privileged use
 - memory dereference denial
 - prompt-inclusion acceptance or denial for memory-derived content
 
@@ -436,11 +594,21 @@ this document.
 
 The following invariants apply:
 
+- continuity is modeled as an append-only active stream
+- the control-plane inspector is the derivation boundary between
+  transient continuity flow and durable memory artifacts
 - memory artifacts are derived artifacts, not authority grants
+- distillates preserve lineage to bounded source windows or source sets
 - wake states are memory artifacts, not standalone authority objects
-- resonate keys are memory artifacts or handles, not prompt authority
+- resonate keys are bounded retrieval handles for eligible distillates,
+  not prompt authority or raw memory authority
+- materialized wake-state projections and recall bundles are bounded
+  projections assembled from derived continuity forms
 - memory references do not imply dereference or inclusion rights
 - exact-key recall is governed dereference
+- projections may re-enter active context only by governed reference or
+  bounded inclusion
+- continuity artifacts and recall handles never become authority
 - client-local continuity state is untrusted content
 - stored memory does not become current truth by persistence alone
 - loading memory never resurrects expired, revoked, or terminated
