@@ -1,6 +1,6 @@
 # AMP Docs
 
-This directory owns the AMP protocol/specification track separately from the
+This directory owns the AMP (Authority Mediation Protocol) specification track separately from the
 Morph implementation repository.
 
 ## Contents
