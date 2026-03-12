@@ -74,9 +74,9 @@ A derived artifact must record:
 
 A `memory_artifact` is a derived continuity object such as:
 
-- distillate
-- resonate key
-- wake state
+- `distillate`
+- `resonate_key`
+- `wake_state`
 
 Memory artifacts remain provenance-bearing and bounded.
 
@@ -113,8 +113,8 @@ prompt, memory, or ordinary render paths.
 
 ### 5.4 Memory Reference
 
-A `memory_ref` identifies a bounded memory artifact such as a resonate
-key or distillate handle.
+A `memory_ref` identifies a bounded memory artifact such as
+`distillate`, `wake_state`, or `resonate_key`.
 
 A memory reference does not imply prompt inclusion.
 

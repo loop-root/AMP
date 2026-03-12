@@ -346,6 +346,23 @@ Concurrent decision rules:
 - a different decision against a non-`pending` approval MUST be rejected
   with denial code `approval_state_conflict`
 
+### 10.5 Approval race matrix
+
+The following matrix is normative for common race and duplicate-delivery
+cases:
+
+| Scenario | Required winning rule | Required returned result |
+| --- | --- | --- |
+| approve vs approve | first valid transition out of `pending` wins | winning request records `approved`; later matching idempotent retry may return stored result, otherwise deny `approval_state_conflict` |
+| approve vs revoke | whichever valid state transition is serialized first wins | later request observes current state and cannot overwrite it |
+| approve vs expiry | if expiry is materialized before the approve transition commits, `expired` wins | decision attempt returns `approval_expired`; otherwise approval may enter `approved` and later expire or consume |
+| revoke vs expiry | whichever terminal transition is serialized first wins | later request observes `revoked` or `expired` and cannot overwrite it |
+| decision nonce replay | exact same `approval_id` and `decision_nonce` with identical payload is idempotent | return stored prior result without a second transition or second winning event |
+| decision nonce reuse with different payload | semantic replay conflict | reject with `approval_decision_nonce_reuse` |
+| different nonces after terminal consumption | terminal state already reached | reject with `approval_state_conflict` |
+| duplicate delivery of the same request | idempotency keyed by `approval_id` plus `decision_nonce` | return stored prior result without a second transition |
+| arrival after underlying subject mismatch | subject no longer matches stored `subject_binding` | reject with `approval_manifest_mismatch` or revocation-derived denial before consumption |
+
 ## 11. Consumption Rules
 
 An `approved` approval may be consumed only by an execution request that
@@ -416,7 +433,17 @@ Approval lifecycle v1 relies on the general denial envelope from RFC
 These codes are additive. They do not replace the general AMP denial
 taxonomy.
 
-## 14. Current Implementation Mapping
+## 14. Compact Schema Alignment
+
+RFC 0007 provides compact shared object shapes for:
+
+- `approval_request`
+- `approval_decision`
+
+RFC 0007 does not replace the lifecycle, race, or binding semantics in
+this document.
+
+## 15. Current Implementation Mapping
 
 The current codebase already partially implements these ideas:
 
@@ -428,7 +455,7 @@ The current codebase already partially implements these ideas:
 This RFC makes the state machine, manifest binding, and replay behavior
 explicit and implementation-neutral.
 
-## 15. Invariants
+## 16. Invariants
 
 The following invariants apply:
 
@@ -441,7 +468,7 @@ The following invariants apply:
 - idempotent retries do not duplicate authority or audit events
 - consumed approvals never silently reopen
 
-## 16. Future Work
+## 17. Future Work
 
 Future AMP RFCs should define:
 

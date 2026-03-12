@@ -12,6 +12,8 @@ Morph implementation repository.
 - [AMP RFC 0004: Canonical Envelope and Integrity Binding](./AMP-RFCs/0004-canonical-envelope-and-integrity-binding.md)
 - [AMP RFC 0005: Approval Lifecycle and Decision Binding](./AMP-RFCs/0005-approval-lifecycle-and-decision-binding.md)
 - [AMP RFC 0006: Continuity and Memory Authority](./AMP-RFCs/0006-continuity-and-memory-authority.md)
+- [AMP RFC 0007: Core Envelopes and Compact Schemas](./AMP-RFCs/0007-core-envelopes-and-compact-schemas.md)
+- [AMP local-uds-v1 Conformance Checklist](./conformance/local-uds-v1-checklist.md)
 
 ## Scope
 

@@ -87,9 +87,12 @@ authorization checkpoint created by the control plane.
 An approval request includes:
 
 - object under review
-- normalized action parameters
+- approval manifest hash
 - target action class
-- expiry and state
+- created/expiry time
+- lifecycle state
+
+Detailed approval lifecycle semantics are defined by RFC 0005.
 
 ### 4.5 Approval Decision
 
@@ -99,7 +102,9 @@ An `approval_decision` is an explicit response to a pending
 An approval decision is:
 
 - bound to a specific approval request
+- bound to the approval manifest hash under review
 - bound to a specific control session or equivalent authority path
+- bound by a decision nonce for semantic replay protection
 - explicit
 - auditable
 
@@ -157,7 +162,7 @@ Reference classes include:
 - artifact reference
 - quarantine reference
 - blob reference
-- memory key reference
+- memory reference
 
 ### 4.11 Denial
 

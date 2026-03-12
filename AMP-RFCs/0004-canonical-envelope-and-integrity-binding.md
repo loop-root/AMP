@@ -542,7 +542,80 @@ Field rules:
 The event envelope is a minimal common shape. It does not replace the
 underlying append-only event log or object-specific event payloads.
 
-## 15. Current Implementation Mapping
+## 15. Conformance Test Vectors
+
+This section provides fixed test vectors for independent implementations.
+
+### 15.1 Positive canonical signing vector
+
+The following values define a complete positive signing example:
+
+- session MAC key hex:
+  - `000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f`
+- scoped token octets:
+  - `tok_01ARZ3NDEKTSV4RRFFQ69G5FAV`
+- request body bytes:
+  - `{"action":"quarantine.inspect","target_ref":"artifact:amp:1234"}`
+- `amp_version`
+  - `1.0`
+- `transport_profile`
+  - `local-uds-v1`
+- `method`
+  - `POST`
+- `path`
+  - `/v1/capabilities/execute`
+- `session_id`
+  - `sess_01ARZ3NDEKTSV4RRFFQ69G5FAV`
+- `timestamp_ms`
+  - `1735689600123`
+- `nonce`
+  - `AAECAwQFBgcICQoLDA0ODw`
+- `mac_algorithm`
+  - `hmac-sha256`
+
+Derived values:
+
+- `token_binding`
+  - `sha256:53d7f667585f8e951c12f9d383f5570aa272d30a14cafb0040bea8e8e68cc34b`
+- `body_sha256`
+  - `3e9663348715e01175b0bf6bee923d06e8cb153353ff32a63301af6462c40723`
+- `canonical_request_sha256`
+  - `c1216b6165388937bc7b4eabf26ac1a676784339c1dc02052536960efb58597e`
+- `request_mac`
+  - `mdOwITZBIj5fBhqpIxX2XkAhlwp_eTs7xoRIUk5DjBQ`
+
+Exact canonical request bytes:
+
+```text
+amp-request-v1
+amp-version:1.0
+transport-profile:local-uds-v1
+method:POST
+path:/v1/capabilities/execute
+session-id:sess_01ARZ3NDEKTSV4RRFFQ69G5FAV
+token-binding:sha256:53d7f667585f8e951c12f9d383f5570aa272d30a14cafb0040bea8e8e68cc34b
+timestamp-ms:1735689600123
+nonce:AAECAwQFBgcICQoLDA0ODw
+body-sha256:3e9663348715e01175b0bf6bee923d06e8cb153353ff32a63301af6462c40723
+mac-algorithm:hmac-sha256
+```
+
+The canonical request string above includes a final trailing line-feed
+byte after `mac-algorithm:hmac-sha256`.
+
+### 15.2 Negative conformance vectors
+
+The following negative cases are REQUIRED conformance failures:
+
+| Case | Modified field(s) | Example value(s) | Required result |
+| --- | --- | --- | --- |
+| stale timestamp | `timestamp_ms` | `1735689480000` with server receive time `1735689605000` | reject before execution with denial code `integrity_failure` |
+| replayed nonce | `nonce` | reuse `AAECAwQFBgcICQoLDA0ODw` in the same `session_id` after one accepted request | reject before execution with denial code `replay_detected` |
+| unsupported version | `amp_version` | `2.0` | reject before execution with denial code `unsupported_version` |
+| unsupported profile | `transport_profile` | `local-tcp-v1` | reject before execution with denial code `unsupported_version` |
+| body-hash mismatch | body bytes and `body_sha256` disagree | carry `body_sha256` of `3e9663348715e01175b0bf6bee923d06e8cb153353ff32a63301af6462c40723` but send body bytes hashing to `753c60833eb047be4ed7353fba637bfc63ffaab5c981a8c84ec101efba7cf0b5` | reject before execution with denial code `integrity_failure` |
+
+## 16. Current Implementation Mapping
 
 The current codebase already partially implements these ideas:
 
@@ -554,7 +627,7 @@ The current codebase already partially implements these ideas:
 This RFC makes the canonical field set, byte serialization, and
 negotiation behavior explicit and implementation-neutral.
 
-## 16. Invariants
+## 17. Invariants
 
 The following invariants apply:
 
@@ -568,7 +641,7 @@ The following invariants apply:
 - integrity failure never falls back to permissive behavior
 - denial and event envelopes remain typed and minimal
 
-## 17. Future Work
+## 18. Future Work
 
 Future AMP RFCs should define:
 

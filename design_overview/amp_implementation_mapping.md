@@ -23,6 +23,11 @@ Use this document as:
 
 Do not treat this document as the protocol specification.
 
+If this document and an AMP RFC drift, the RFC text is authoritative.
+
+Sibling-repo source links in this document are implementation pointers
+only. They are not part of the neutral protocol specification.
+
 ## Reading order
 
 For protocol intent, read:
@@ -33,8 +38,13 @@ For protocol intent, read:
 4. [AMP RFC 0004: Canonical Envelope and Integrity Binding](../AMP-RFCs/0004-canonical-envelope-and-integrity-binding.md)
 5. [AMP RFC 0005: Approval Lifecycle and Decision Binding](../AMP-RFCs/0005-approval-lifecycle-and-decision-binding.md)
 6. [AMP RFC 0006: Continuity and Memory Authority](../AMP-RFCs/0006-continuity-and-memory-authority.md)
+7. [AMP RFC 0007: Core Envelopes and Compact Schemas](../AMP-RFCs/0007-core-envelopes-and-compact-schemas.md)
 
 For current implementation, read this document and the linked code.
+
+For implementation verification, read:
+
+- [AMP local-uds-v1 Conformance Checklist](../conformance/local-uds-v1-checklist.md)
 
 ## Layer mapping
 
@@ -229,6 +239,9 @@ Notes:
 
 - artifacts exist and are bounded
 - governance is still more Morph-local than the RFC target state
+- current Morph-local continuity behavior is descriptive drift only and
+  remains non-authoritative until it is rebound through Loopgate-owned
+  AMP paths
 
 ### Reference
 
@@ -458,6 +471,12 @@ Reason:
 - the bounded continuity model is useful already
 - the runtime does not yet need a full Loopgate-mediated memory API to
   preserve core invariants
+
+Drift marker:
+
+- these behaviors are outside AMP today
+- these behaviors remain non-authoritative until rebound through
+  Loopgate-owned AMP paths
 
 ### Ad hoc reference representations
 

@@ -15,7 +15,18 @@ communicates with a privileged local control plane over a trusted
 machine-local channel.
 
 This RFC does not define the full AMP object model. It defines the
-transport and integrity rules for the current local deployment mode.
+transport and binding rules for the current local deployment mode.
+
+RFC 0004 is authoritative for:
+
+- the canonical request envelope
+- canonical request byte serialization
+- request MAC calculation
+- freshness rules
+- nonce replay semantics
+
+If wording in this RFC and RFC 0004 ever drifts on canonical request
+integrity behavior, RFC 0004 wins.
 
 ## 2. Scope
 
@@ -116,6 +127,10 @@ Every privileged request must be integrity-protected.
 
 The current local profile uses a server-issued session MAC key and a
 signed request envelope.
+
+RFC 0004 defines the exact canonical field set, canonical byte sequence,
+request MAC algorithm, freshness window, and nonce replay rules for that
+envelope.
 
 The signed request envelope must bind:
 
@@ -265,6 +280,8 @@ The current codebase already partially implements this profile:
 - opaque scoped tokens
 - signed request envelopes
 - nonce and timestamp replay protection
+
+RFC 0004 now makes the canonical integrity behavior explicit.
 
 The protocol itself is not yet formalized as a standalone named layer.
 

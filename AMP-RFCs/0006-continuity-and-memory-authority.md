@@ -373,7 +373,27 @@ it MUST ensure that:
 - local summaries, wake-state views, and recall hints are treated as
   content rather than authority
 
-## 13. Required Observability
+## 13. Outside AMP Today
+
+The following behaviors may exist in current implementations but remain
+outside AMP today unless and until a future AMP RFC standardizes them:
+
+- client-local wake-state rendering caches
+- client-local continuity ranking hints
+- client-local exact-key recall hints or optimistic matches
+- client-local projected summaries or continuity views
+- user-authored local notes not yet rebound as memory artifacts
+
+Outside AMP today means:
+
+- these behaviors are non-authoritative
+- these behaviors are implementation-local
+- these behaviors MUST NOT by themselves justify dereference,
+  prompt inclusion, or privileged execution inclusion
+- any privileged use derived from them requires rebound through
+  AMP-governed memory objects and policy evaluation
+
+## 14. Required Observability
 
 The following memory-related actions are security-relevant and SHOULD be
 observable through the append-only event stream using RFC 0004 event
@@ -388,7 +408,7 @@ envelopes:
 User-facing projections remain derived views. They do not replace the
 authoritative event stream.
 
-## 14. Current Implementation Mapping
+## 15. Current Implementation Mapping
 
 The current codebase already partially implements this model:
 
@@ -405,7 +425,14 @@ The main implementation drift remains:
 
 This RFC defines the target authority placement for those operations.
 
-## 15. Invariants
+## 16. Compact Schema Alignment
+
+RFC 0007 provides the compact shared schema for `memory_ref`.
+
+RFC 0007 does not replace the authority and dereference semantics in
+this document.
+
+## 17. Invariants
 
 The following invariants apply:
 
@@ -419,7 +446,7 @@ The following invariants apply:
 - loading memory never resurrects expired, revoked, or terminated
   authority
 
-## 16. Future Work
+## 18. Future Work
 
 Future AMP RFCs should define:
 
