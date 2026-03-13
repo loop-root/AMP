@@ -1,5 +1,3 @@
-# AMP Docs
-
 # AMP — Authority Mediation Protocol
 
 AMP is an open protocol for constraining AI agents.
@@ -80,22 +78,4 @@ AMP is in early draft. The RFCs are stable enough to implement against, and the 
 AMP is an open specification. If you find a gap, an ambiguity, or a flaw in the protocol design, open an issue or submit a pull request. The goal is a protocol that any agent framework can adopt — contributions that improve clarity, security, or implementability are especially valued.
 
 ## License
-
-
-
-## Contents
-
-- [AMP Implementation Mapping](./design_overview/amp_implementation_mapping.md)
-- [AMP RFC 0001: Local Transport Profile](./AMP-RFCs/0001-local-transport-profile.md)
-- [AMP RFC 0002: Core Object Model](./AMP-RFCs/0002-core-object-model.md)
-- [AMP RFC 0003: Artifact and Reference Model](./AMP-RFCs/0003-artifact-and-reference-model.md)
-- [AMP RFC 0004: Canonical Envelope and Integrity Binding](./AMP-RFCs/0004-canonical-envelope-and-integrity-binding.md)
-- [AMP RFC 0005: Approval Lifecycle and Decision Binding](./AMP-RFCs/0005-approval-lifecycle-and-decision-binding.md)
-- [AMP RFC 0006: Continuity and Memory Authority](./AMP-RFCs/0006-continuity-and-memory-authority.md)
-- [AMP RFC 0007: Core Envelopes and Compact Schemas](./AMP-RFCs/0007-core-envelopes-and-compact-schemas.md)
-- [AMP local-uds-v1 Conformance Checklist](./conformance/local-uds-v1-checklist.md)
-
-## Scope
-
-Keep neutral protocol and object-model documents here. Product-specific runtime
-docs, operator docs, and implementation invariants stay in the Morph repo.
+MIT
