@@ -57,7 +57,7 @@ A [conformance checklist](./conformance/local-uds-v1-checklist.md) is available 
 
 ## Reference implementation
 
-[Morph](https://github.com/loop-root/morph) is a reference implementation of AMP built around a local orchestrator (Morph) and a local control plane (Loopgate). It implements the local transport profile, signed request envelopes, policy-gated capability execution, the approval workflow with manifest binding, quarantine and promotion, hash-chained audit, and morphling (subordinate agent) lifecycle management.
+[Morph](https://github.com/loop-root/morph) is a reference implementation of AMP built around a local orchestrator (Morph) and a local control plane (Loopgate). It implements the local transport profile, signed request envelopes, policy-gated capability execution, the approval workflow with manifest binding, quarantine and promotion, hash-chained audit, and morphling (subordinate agent) lifecycle management. (still in dev not yet public)
 
 ## Relationship to MCP
 
