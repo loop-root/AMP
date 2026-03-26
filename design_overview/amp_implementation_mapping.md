@@ -1,13 +1,15 @@
+**Last updated:** 2026-03-24
+
 # AMP Implementation Mapping
 
 Status: current-state mapping  
 Authority: descriptive / implementation-facing  
-Location: maintained in the sibling `AMP` directory next to the `morph` repo  
-North star: [AMP RFCs](../AMP-RFCs/0001-local-transport-profile.md)
+Location: **canonical copy** under `docs/AMP/` in this repository (vendored north star; periodically sync with a standalone AMP checkout if you maintain one alongside Morph).  
+North star: [AMP RFCs](../AMP-RFCs/0001-local-transport-profile.md) — if this tree and standalone AMP diverge, reconcile by copying RFCs here and re-running link checks.
 
 ## Purpose
 
-This document maps the current Morph + Loopgate implementation onto the
+This document maps the current **Haven + Loopgate** implementation onto the
 Authority Mediation Protocol (AMP) RFC track.
 
 The AMP RFCs describe the intended neutral protocol and object model.
@@ -25,8 +27,9 @@ Do not treat this document as the protocol specification.
 
 If this document and an AMP RFC drift, the RFC text is authoritative.
 
-Sibling-repo source links in this document are implementation pointers
-only. They are not part of the neutral protocol specification.
+Links into `internal/` and `cmd/` in this document are **Morph codebase** pointers only. They are not part of the neutral protocol specification.
+
+**Product integrity:** [Morph RFC 0001 (Loopgate token policy)](../../rfcs/0001-loopgate-token-policy.md) is the Loopgate-local articulation of tokens and signing; it MUST stay consistent with [AMP RFC 0004](../AMP-RFCs/0004-canonical-envelope-and-integrity-binding.md) for canonical request bytes and MAC rules (AMP 0004 wins on conflict).
 
 ## Reading order
 
@@ -39,6 +42,7 @@ For protocol intent, read:
 5. [AMP RFC 0005: Approval Lifecycle and Decision Binding](../AMP-RFCs/0005-approval-lifecycle-and-decision-binding.md)
 6. [AMP RFC 0006: Continuity and Memory Authority](../AMP-RFCs/0006-continuity-and-memory-authority.md)
 7. [AMP RFC 0007: Core Envelopes and Compact Schemas](../AMP-RFCs/0007-core-envelopes-and-compact-schemas.md)
+8. [AMP RFC 0008: Open issues, gaps, and challenged assumptions](../AMP-RFCs/0008-open-issues-gaps-and-assumptions.md) (non-normative working analysis)
 
 For current implementation, read this document and the linked code.
 
@@ -50,10 +54,10 @@ For implementation verification, read:
 
 Current product layers:
 
-- `Morph`
-  - operator shell
-  - planning
-  - bounded continuity presentation
+- **Haven** (`cmd/haven/`)
+  - sole shipped operator shell
+  - planning and presentation
+  - bounded continuity projection
   - user interaction
 - `Loopgate`
   - privileged control-plane implementation
@@ -76,9 +80,9 @@ AMP object:
 
 Current implementation:
 
-- [OpenSessionRequest](../../morph/internal/loopgate/types.go)
-- [OpenSessionResponse](../../morph/internal/loopgate/types.go)
-- [controlSession](../../morph/internal/loopgate/server.go)
+- [OpenSessionRequest](../../../internal/loopgate/types.go)
+- [OpenSessionResponse](../../../internal/loopgate/types.go)
+- [controlSession](../../../internal/loopgate/server.go)
 
 Alignment:
 
@@ -97,10 +101,10 @@ AMP object:
 
 Current implementation:
 
-- [CapabilitySummary](../../morph/internal/loopgate/types.go)
-- [CapabilityRequest](../../morph/internal/loopgate/types.go)
-- [CapabilityResponse](../../morph/internal/loopgate/types.go)
-- configured capability records in [integration_config.go](../../morph/internal/loopgate/integration_config.go)
+- [CapabilitySummary](../../../internal/loopgate/types.go)
+- [CapabilityRequest](../../../internal/loopgate/types.go)
+- [CapabilityResponse](../../../internal/loopgate/types.go)
+- configured capability records in [integration_config.go](../../../internal/loopgate/integration_config.go)
 
 Alignment:
 
@@ -120,8 +124,8 @@ AMP object:
 
 Current implementation:
 
-- [capabilityToken](../../morph/internal/loopgate/server.go)
-- token denial codes in [types.go](../../morph/internal/loopgate/types.go)
+- [capabilityToken](../../../internal/loopgate/server.go)
+- token denial codes in [types.go](../../../internal/loopgate/types.go)
 
 Alignment:
 
@@ -143,9 +147,9 @@ AMP objects:
 
 Current implementation:
 
-- [pendingApproval](../../morph/internal/loopgate/server.go)
-- [ApprovalDecisionRequest](../../morph/internal/loopgate/types.go)
-- UI approval shapes in [ui_types.go](../../morph/internal/loopgate/ui_types.go)
+- [pendingApproval](../../../internal/loopgate/server.go)
+- [ApprovalDecisionRequest](../../../internal/loopgate/types.go)
+- UI approval shapes in [ui_types.go](../../../internal/loopgate/ui_types.go)
 
 Alignment:
 
@@ -155,7 +159,7 @@ Notes:
 
 - approvals are Loopgate-owned
 - approval decisions are bound to approval token + decision nonce
-- Morph renders but does not authorize
+- Haven renders but does not authorize
 
 ### Artifact
 
@@ -165,9 +169,9 @@ AMP object:
 
 Current implementation:
 
-- quarantine artifacts in [quarantine.go](../../morph/internal/loopgate/quarantine.go)
-- derived artifacts in [promotion.go](../../morph/internal/loopgate/promotion.go)
-- memory artifacts in [wake_state.go](../../morph/internal/memory/wake_state.go), [distillate.go](../../morph/internal/memory/distillate.go), and [recall.go](../../morph/internal/memory/recall.go)
+- quarantine artifacts in [quarantine.go](../../../internal/loopgate/quarantine.go)
+- derived artifacts in [promotion.go](../../../internal/loopgate/promotion.go)
+- memory artifacts in [wake_state.go](../../../internal/memory/wake_state.go), [distillate.go](../../../internal/memory/distillate.go), and [recall.go](../../../internal/memory/recall.go)
 
 Alignment:
 
@@ -186,8 +190,8 @@ AMP object:
 
 Current implementation:
 
-- [quarantinedPayloadRecord](../../morph/internal/loopgate/quarantine.go)
-- quarantine metadata/view/prune request and response types in [quarantine.go](../../morph/internal/loopgate/quarantine.go) and [types.go](../../morph/internal/loopgate/types.go)
+- [quarantinedPayloadRecord](../../../internal/loopgate/quarantine.go)
+- quarantine metadata/view/prune request and response types in [quarantine.go](../../../internal/loopgate/quarantine.go) and [types.go](../../../internal/loopgate/types.go)
 
 Alignment:
 
@@ -207,7 +211,7 @@ AMP object:
 
 Current implementation:
 
-- [derivedArtifactRecord](../../morph/internal/loopgate/promotion.go)
+- [derivedArtifactRecord](../../../internal/loopgate/promotion.go)
 
 Alignment:
 
@@ -227,9 +231,9 @@ AMP object:
 
 Current implementation:
 
-- [WakeState](../../morph/internal/memory/wake_state.go)
-- [Distillate](../../morph/internal/memory/distillate.go)
-- resonate key documents in [recall.go](../../morph/internal/memory/recall.go)
+- [WakeState](../../../internal/memory/wake_state.go)
+- [Distillate](../../../internal/memory/distillate.go)
+- resonate key documents in [recall.go](../../../internal/memory/recall.go)
 
 Alignment:
 
@@ -238,8 +242,8 @@ Alignment:
 Notes:
 
 - artifacts exist and are bounded
-- governance is still more Morph-local than the RFC target state
-- current Morph-local continuity behavior is descriptive drift only and
+- governance is still more **client-local** than the RFC target state
+- current client-local continuity behavior is descriptive drift only and
   remains non-authoritative until it is rebound through Loopgate-owned
   AMP paths
 
@@ -274,8 +278,8 @@ AMP object:
 
 Current implementation:
 
-- [DenialCode*](../../morph/internal/loopgate/types.go)
-- denial-bearing [CapabilityResponse](../../morph/internal/loopgate/types.go)
+- [DenialCode*](../../../internal/loopgate/types.go)
+- denial-bearing [CapabilityResponse](../../../internal/loopgate/types.go)
 
 Alignment:
 
@@ -294,9 +298,9 @@ AMP object:
 
 Current implementation:
 
-- [Event](../../morph/internal/ledger/ledger.go)
-- Loopgate audit events in [server.go](../../morph/internal/loopgate/server.go)
-- continuity annotations in [continuity.go](../../morph/internal/memory/continuity.go)
+- [Event](../../../internal/ledger/ledger.go)
+- Loopgate audit events in [server.go](../../../internal/loopgate/server.go)
+- continuity annotations in [continuity.go](../../../internal/memory/continuity.go)
 
 Alignment:
 
@@ -320,8 +324,8 @@ AMP RFC:
 
 Current implementation:
 
-- [POST /v1/session/open](../../morph/internal/loopgate/server.go)
-- client session open in [client.go](../../morph/internal/loopgate/client.go)
+- [POST /v1/session/open](../../../internal/loopgate/server.go)
+- client session open in [client.go](../../../internal/loopgate/client.go)
 
 Alignment:
 
@@ -337,8 +341,8 @@ AMP RFC:
 
 Current implementation:
 
-- [POST /v1/capabilities/execute](../../morph/internal/loopgate/server_capability_handlers.go)
-- request and response types in [types.go](../../morph/internal/loopgate/types.go)
+- [POST /v1/capabilities/execute](../../../internal/loopgate/server_capability_handlers.go)
+- request and response types in [types.go](../../../internal/loopgate/types.go)
 
 Alignment:
 
@@ -354,8 +358,8 @@ AMP RFC:
 
 Current implementation:
 
-- [POST /v1/approvals/{id}/decision](../../morph/internal/loopgate/server_capability_handlers.go)
-- UI approval flow in [ui_server.go](../../morph/internal/loopgate/ui_server.go)
+- [POST /v1/approvals/{id}/decision](../../../internal/loopgate/server_capability_handlers.go)
+- UI approval flow in [ui_server.go](../../../internal/loopgate/ui_server.go)
 
 Alignment:
 
@@ -370,8 +374,8 @@ AMP RFC:
 
 Current implementation:
 
-- [POST /v1/model/reply](../../morph/internal/loopgate/server_model_handlers.go)
-- client call in [client.go](../../morph/internal/loopgate/client.go)
+- [POST /v1/model/reply](../../../internal/loopgate/server_model_handlers.go)
+- client call in [client.go](../../../internal/loopgate/client.go)
 
 Alignment:
 
@@ -392,9 +396,9 @@ AMP RFC:
 
 Current implementation:
 
-- [POST /v1/quarantine/metadata](../../morph/internal/loopgate/server_quarantine_handlers.go)
-- [POST /v1/quarantine/view](../../morph/internal/loopgate/server_quarantine_handlers.go)
-- [POST /v1/quarantine/prune](../../morph/internal/loopgate/server_quarantine_handlers.go)
+- [POST /v1/quarantine/metadata](../../../internal/loopgate/server_quarantine_handlers.go)
+- [POST /v1/quarantine/view](../../../internal/loopgate/server_quarantine_handlers.go)
+- [POST /v1/quarantine/prune](../../../internal/loopgate/server_quarantine_handlers.go)
 
 Alignment:
 
@@ -410,7 +414,7 @@ AMP RFC:
 
 Current implementation:
 
-- promotion logic in [promotion.go](../../morph/internal/loopgate/promotion.go)
+- promotion logic in [promotion.go](../../../internal/loopgate/promotion.go)
 
 Alignment:
 
@@ -427,9 +431,9 @@ AMP RFC:
 
 Current implementation:
 
-- continuity annotations in [continuity.go](../../morph/internal/memory/continuity.go)
-- wake-state build/load in [wake_state.go](../../morph/internal/memory/wake_state.go)
-- recall in [recall.go](../../morph/internal/memory/recall.go)
+- continuity annotations in [continuity.go](../../../internal/memory/continuity.go)
+- wake-state build/load in [wake_state.go](../../../internal/memory/wake_state.go)
+- recall in [recall.go](../../../internal/memory/recall.go)
 
 Alignment:
 
@@ -439,7 +443,7 @@ Notes:
 
 - semantics are aligned
 - authority placement is not fully aligned
-- current code is still more Morph-local than the AMP/MORPH RFC target
+- current code is still more client-local than the AMP / product-RFC target
 
 ## Intentional drift
 
@@ -447,14 +451,7 @@ The following drifts are intentional for now:
 
 ### Product-specific package names
 
-The implementation still uses:
-
-- `Morph`
-- `Loopgate`
-
-instead of:
-
-- neutral `amp` package names
+The implementation still uses product-oriented names (`morph` module, `Haven`, `Loopgate`) rather than neutral `amp` package names.
 
 Reason:
 
@@ -464,7 +461,7 @@ Reason:
 
 ### Memory boundary placement
 
-Wake-state build/load and exact-key recall remain Morph-local.
+Wake-state build/load and exact-key recall remain **client-local** (Haven-side packages) in parts of the codebase.
 
 Reason:
 
@@ -492,7 +489,7 @@ Reason:
 1. No shared neutral AMP package in code
 2. No unified artifact envelope type
 3. No unified reference type
-4. Memory authority still partly local to Morph
+4. Memory authority still partly local to the Haven client packages
 5. Capability arguments are still narrower than a future generalized AMP
    object model likely needs
 

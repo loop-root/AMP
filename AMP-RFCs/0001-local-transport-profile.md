@@ -28,6 +28,10 @@ RFC 0004 is authoritative for:
 If wording in this RFC and RFC 0004 ever drifts on canonical request
 integrity behavior, RFC 0004 wins.
 
+### 1.1 Companion: Morph Loopgate token RFC
+
+The Morph repository carries a **product-local** articulation of the same boundary: [RFC 0001: Loopgate Token and Request Integrity Policy](../../rfcs/0001-loopgate-token-policy.md) (HTTP on Unix socket, session open, capability/approval tokens, signing). It MUST NOT contradict **AMP RFC 0004** on canonical request bytes or MAC semantics. Use the AMP RFCs for neutral interop language; use the Morph RFC for route-level and denial-code detail in Loopgate today.
+
 ## 2. Scope
 
 This profile applies to local communication between:
@@ -155,7 +159,96 @@ Capability and approval tokens are:
 
 Tokens must not be treated as self-describing authority grants.
 
-## 7. Request Rules
+## 7. Session Establishment
+
+### 7.1 Overview
+
+Session establishment is the protocol operation that creates a new
+control session between an unprivileged client and the privileged
+control plane.
+
+Session establishment:
+
+- is the first privileged exchange on a new connection
+- is not itself protected by a signed request envelope because no
+  session MAC key exists yet
+- produces the control session identifier, the session MAC key, and
+  any scoped tokens required for subsequent requests
+- binds the session to the negotiated AMP version and transport profile
+
+### 7.2 Client request
+
+The client sends a session-open request containing:
+
+- `amp_versions`
+  - ordered list of exact `amp_version` strings the client supports,
+    in descending preference order
+- `transport_profiles`
+  - ordered list of exact `transport_profile` strings the client
+    supports, in descending preference order
+- `actor`
+  - opaque client-chosen label identifying the requesting client
+  - MUST pass the identifier policy rules in Section 12
+- `requested_capabilities`
+  - list of capability identifiers the client requests authorization
+    for
+
+The session-open request does not carry a signed envelope, nonce, or
+timestamp. Transport-level peer binding (Section 6.1) provides the
+initial trust anchor.
+
+### 7.3 Server response
+
+If session establishment succeeds, the server returns:
+
+- `session_id`
+  - opaque control-session identifier
+- `mac_key`
+  - base64url-encoded session MAC key (at least 32 raw bytes)
+  - the client MUST treat this value as secret material
+  - the server MUST NOT log or persist this value outside volatile
+    session state
+- `amp_version`
+  - the exact negotiated AMP version
+- `transport_profile`
+  - the exact negotiated transport profile
+- `capability_token`
+  - opaque scoped token for capability execution
+- `approval_token`
+  - opaque scoped token for approval decisions
+- `expires_at_ms`
+  - session expiry time in Unix epoch milliseconds UTC
+
+Version and profile selection follows RFC 0004 Section 6.3.
+
+### 7.4 Failure
+
+If session establishment fails, the server MUST return a denial
+envelope (RFC 0004 Section 13).
+
+Common denial codes for session establishment:
+
+- `unsupported_version` — no AMP version or transport profile overlap
+- `authorization_failed` — peer identity not authorized
+- `policy_denied` — policy denies session creation
+- `validation_error` — malformed request fields
+
+The server MUST NOT issue a session or MAC key on failure.
+
+### 7.5 Session binding
+
+After successful establishment, all subsequent privileged requests on
+this session MUST:
+
+- use the negotiated `amp_version` and `transport_profile` in the
+  canonical envelope
+- use the issued `session_id` in the canonical envelope
+- be signed with the issued `mac_key`
+
+The server MUST reject requests where the carried `amp_version` or
+`transport_profile` does not match the session-bound values.
+
+## 8. Request Rules
 
 A privileged local request must include:
 
@@ -180,7 +273,7 @@ The server must reject:
 - invalid or expired scoped tokens
 - requests outside the token's scope
 
-## 8. Response Rules
+## 9. Response Rules
 
 Responses are trusted only as control-plane responses from the local
 authority boundary.
@@ -192,15 +285,35 @@ Responses must:
 - preserve explicit denial/error semantics
 - preserve classification and provenance metadata where applicable
 
-This profile does not require response signatures in v1.
+### 9.1 Request-response correlation
 
-Future AMP work may define:
+Every response to a privileged request SHOULD include a
+`request_id` field containing a stable identifier that the client
+can use to correlate the response with the originating request.
 
-- response binding to request identifiers
-- response MAC/signature integrity
+The `request_id` MAY be:
+
+- the `canonical_request_sha256` from RFC 0004 Section 9.2
+- an opaque server-assigned identifier returned alongside the response
+- the client-supplied `nonce` echoed back
+
+The server MUST NOT include secret-bearing material in the
+`request_id`.
+
+### 9.2 Response integrity
+
+This profile does not require response signatures or MACs in v1.
+
+Clients SHOULD treat control-plane responses as authoritative for the
+local boundary but MUST NOT extend that trust to content fields that
+originate from model output, tool output, or external sources.
+
+Future AMP versions may define:
+
+- response MAC or signature binding
 - stronger transport-level response attestation
 
-## 9. Secrets and Sensitive Material
+## 10. Secrets and Sensitive Material
 
 The local transport profile must not be used to export raw provider
 credentials, refresh tokens, client secrets, or raw secure-store
@@ -222,7 +335,7 @@ The control plane must not return:
 - private key material
 - secure-store contents
 
-## 10. Artifact and Reference Semantics
+## 11. Artifact and Reference Semantics
 
 The local transport profile may carry references to:
 
@@ -241,7 +354,23 @@ References are:
 
 Dereference rules remain governed by control-plane policy.
 
-## 11. Denials and Errors
+## 12. Identifier Policy
+
+Identifiers used in session establishment and protocol objects MUST be
+inert labels.
+
+An identifier value MUST:
+
+- contain only ASCII letters `A-Z`, `a-z`, digits `0-9`, `.`, `_`,
+  or `-`
+- be between 1 and 128 characters inclusive
+- not contain path traversal sequences (`.`, `..`, `/`, `\`)
+- not contain shell metacharacters or template syntax
+
+The server MUST reject identifiers that fail these rules with denial
+code `validation_error`.
+
+## 13. Denials and Errors
 
 The protocol must favor explicit, typed denials over vague failures.
 
@@ -259,7 +388,44 @@ Denials should distinguish:
 The transport must not silently fall back to permissive behavior when a
 validation or integrity rule fails.
 
-## 12. Versioning
+## 14. Client Recovery
+
+### 14.1 Session loss
+
+When a client receives a denial with code `session_invalidated` or
+detects that the transport connection has been lost:
+
+- the client MUST discard the session MAC key, session identifier,
+  and all scoped tokens bound to the lost session
+- the client MUST NOT reuse nonces or MAC keys from the lost session
+- the client MAY attempt to establish a new session
+
+### 14.2 Back-off
+
+Clients SHOULD implement exponential back-off when session
+establishment fails repeatedly.
+
+Recommended minimum:
+
+- initial delay: 500 milliseconds
+- maximum delay: 30 seconds
+- jitter: randomized within each delay interval
+
+Clients MUST NOT retry session establishment in a tight loop.
+
+### 14.3 State after recovery
+
+A new session is a fresh authority context.
+
+After re-establishment:
+
+- prior scoped tokens are invalid
+- prior approval states are not carried forward
+- prior nonces are not reusable
+- prior capability results may be stale
+- the client SHOULD refresh any cached projection state
+
+## 15. Versioning
 
 The local transport profile should be versioned explicitly.
 
@@ -270,7 +436,7 @@ Versioning should allow:
 
 This RFC defines the first local profile only.
 
-## 13. Current Implementation Mapping
+## 16. Current Implementation Mapping
 
 The current codebase already partially implements this profile:
 
@@ -287,7 +453,7 @@ The protocol itself is not yet formalized as a standalone named layer.
 
 This RFC provides that naming and boundary.
 
-## 14. Invariants
+## 17. Invariants
 
 The following invariants apply to this profile:
 
@@ -300,7 +466,7 @@ The following invariants apply to this profile:
 - local transport does not imply full local trust
 - references are not content and are not trust escalation
 
-## 15. Future Work
+## 18. Future Work
 
 Future AMP RFCs should define:
 

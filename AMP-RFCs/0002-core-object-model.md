@@ -200,7 +200,29 @@ The core object model expects the following relationships:
 - references point to artifacts without becoming them
 - events record state transitions for all of the above
 
-## 6. Authority Rules
+## 6. Reserved Sentinel Values
+
+The literal string `none` is a reserved protocol sentinel across all AMP
+object fields.
+
+When a required field has no concrete value, the value MUST be the
+literal string `none`.
+
+Rules:
+
+- `none` MUST NOT be used as a valid identifier, reference, hash, or
+  classification value in any AMP object
+- implementations MUST NOT create objects whose identifiers, references,
+  or other typed fields collide with the literal `none`
+- `none` is case-sensitive: only the exact lower-case ASCII string
+  `none` is reserved
+- fields that carry `none` remain structurally present in canonical
+  serialization and hashing
+
+Future AMP RFCs MUST NOT introduce additional sentinel strings without
+registering them in this section.
+
+## 7. Authority Rules
 
 Authority may come only from:
 
@@ -217,7 +239,7 @@ Authority must not come from:
 - artifact existence alone
 - references alone
 
-## 7. Reference Rules
+## 8. Reference Rules
 
 References are identifiers, not ambient authority.
 
@@ -231,7 +253,7 @@ A valid reference does not imply:
 
 Dereference and use rules remain object- and policy-specific.
 
-## 8. Artifact Rules
+## 9. Artifact Rules
 
 Artifacts must be:
 
@@ -243,7 +265,7 @@ Artifacts must be:
 Derived artifacts must not claim more trust than their source inputs and
 derivation policy justify.
 
-## 9. Denial Rules
+## 10. Denial Rules
 
 Denials must be:
 
@@ -255,7 +277,7 @@ Denials must be:
 The protocol must not silently collapse denials into generic runtime
 errors when the failure mode is semantically meaningful.
 
-## 10. Current Implementation Mapping
+## 11. Current Implementation Mapping
 
 The current codebase already implements many of these object classes in
 partial form:
@@ -270,7 +292,7 @@ partial form:
 
 This RFC provides the common neutral vocabulary across those pieces.
 
-## 11. Invariants
+## 12. Invariants
 
 The following invariants apply to the AMP core object model:
 
@@ -283,7 +305,104 @@ The following invariants apply to the AMP core object model:
 - denials remain explicit
 - security-relevant state transitions remain observable
 
-## 12. Future Work
+## 13. Denial Code Registry
+
+The following denial codes are normatively defined across AMP RFCs.
+
+Implementations MUST use these exact code strings. Extensions MUST
+use a vendor-prefixed namespace of the form `x-<vendor>.<code>` to
+avoid collisions with future AMP-defined codes.
+
+### 13.1 Transport and integrity (RFC 0004)
+
+| Code | Meaning |
+| --- | --- |
+| `unsupported_version` | No supported AMP version or transport profile overlap, or mismatch with bound session |
+| `invalid_envelope` | Canonical envelope field fails syntax or presence validation |
+| `integrity_failure` | MAC mismatch, body hash mismatch, stale timestamp, or token binding mismatch |
+| `replay_detected` | Nonce reused within the bound session |
+| `session_invalidated` | Server lost session MAC key, negotiation record, or replay-detection state |
+
+### 13.2 Authorization and policy
+
+| Code | Meaning |
+| --- | --- |
+| `authorization_failed` | Caller lacks required authority for the requested action |
+| `policy_denied` | Control-plane policy explicitly denied the action |
+| `validation_error` | Request payload fails semantic validation |
+| `storage_state_mismatch` | Referenced object storage state does not support the requested operation |
+| `unsupported_operation` | The requested operation is not supported by this control plane |
+
+### 13.3 Approval lifecycle (RFC 0005)
+
+| Code | Meaning |
+| --- | --- |
+| `approval_manifest_mismatch` | Decision manifest hash does not match stored approval manifest |
+| `approval_decision_nonce_reuse` | Same `approval_id` and `decision_nonce` with different payload |
+| `approval_state_conflict` | Approval is no longer in a state that accepts this transition |
+| `approval_not_pending` | Approval exists but is not in `pending` state |
+| `approval_expired` | Approval has passed its `expires_at_ms` |
+| `approval_revoked` | Approval was explicitly revoked before use |
+
+### 13.4 Audit
+
+| Code | Meaning |
+| --- | --- |
+| `audit_unavailable` | Required audit append failed; action cannot proceed |
+
+## 14. Event Type Registry
+
+The following event types are normatively defined across AMP RFCs.
+
+Implementations MUST use these exact type strings for the specified
+lifecycle transitions. Extensions MUST use a vendor-prefixed namespace
+of the form `x-<vendor>.<type>` to avoid collisions.
+
+### 14.1 Session events
+
+| Event type | Trigger |
+| --- | --- |
+| `session.opened` | Control session successfully established |
+| `session.invalidated` | Control session invalidated by server |
+| `session.expired` | Control session expired |
+
+### 14.2 Capability events
+
+| Event type | Trigger |
+| --- | --- |
+| `capability.requested` | Capability execution requested |
+| `capability.executed` | Capability execution completed successfully |
+| `capability.denied` | Capability execution denied by policy or validation |
+
+### 14.3 Approval events (RFC 0005)
+
+| Event type | Trigger |
+| --- | --- |
+| `approval.created` | New approval request created |
+| `approval.decision.accepted` | Valid approval decision accepted and state transitioned |
+| `approval.decision.rejected` | Approval decision rejected (mismatch, conflict, or invalid) |
+| `approval.expired` | Approval state materialized as expired |
+| `approval.revoked` | Approval explicitly revoked by control plane |
+| `approval.consumed` | Approved approval bound to execution request |
+
+### 14.4 Memory events (RFC 0006)
+
+| Event type | Trigger |
+| --- | --- |
+| `memory.artifact.created` | Memory artifact (distillate, resonate key, or wake state) created |
+| `memory.recall.resolved` | Exact-key recall resolved for privileged use |
+| `memory.dereference.denied` | Memory dereference denied by policy |
+| `memory.wake_state.loaded` | Wake state loaded for privileged use |
+
+### 14.5 Artifact events (RFC 0003)
+
+| Event type | Trigger |
+| --- | --- |
+| `artifact.quarantined` | New quarantine artifact ingested |
+| `artifact.promoted` | Derived artifact created from quarantine source |
+| `artifact.pruned` | Artifact bytes pruned; metadata retained |
+
+## 15. Future Work
 
 Future AMP RFCs should define:
 
@@ -291,3 +410,5 @@ Future AMP RFCs should define:
 - cross-object transaction semantics where needed
 - richer interoperability guidance for object serialization beyond the
   current transport envelope work
+- registry governance process for adding new denial codes and event
+  types to the core registries

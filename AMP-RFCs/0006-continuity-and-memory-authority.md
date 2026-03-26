@@ -146,6 +146,23 @@ Reintroduction rules:
 - reintroduction MUST NOT bypass prompt-inclusion or execution-inclusion
   policy
 
+### 4.5 Memory authority degraded profile (explicit labeling)
+
+An implementation or product that still performs **privileged**
+wake-state materialization or exact-key recall outside the
+control-plane inspector path MUST NOT claim full conformance with this
+RFC’s memory authority rules for that slice.
+
+Such implementations SHOULD document:
+
+- which operations remain client-local or otherwise outside the inspector
+  boundary
+- that those paths are not AMP-governed memory authority for the purpose
+  of conformance claims
+
+This section does not relax Section 4.2 for implementations that claim
+full memory authority conformance.
+
 ## 5. Taxonomy
 
 ### 5.1 Memory artifact

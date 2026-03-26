@@ -145,6 +145,30 @@ then the server MUST:
 - return denial code `unsupported_version`
 - avoid fallback, coercion, or best-effort reinterpretation
 
+### 6.5 Server process replacement and session authentication continuity
+
+If the server process is replaced (restart, controlled failover, rolling
+upgrade, or equivalent) and cannot restore, for an established control
+session identified by `session_id`:
+
+- the session MAC key material bound to that session, and
+- the record of the negotiated `amp_version` and `transport_profile`,
+  and
+- replay-detection state as required by Section 11.4,
+
+then the server MUST fail closed. It MUST reject privileged canonical
+requests for that `session_id` before action execution and SHOULD return
+denial code `session_invalidated`.
+
+If the server restores the MAC key and negotiated tuple but cannot
+restore replay-detection state, Section 11.4 applies.
+
+A server upgrade that changes canonical verification rules for an already
+negotiated session MUST NOT apply the new rules silently to in-flight
+sessions. The operator MUST either invalidate affected sessions before
+cutover or retain backward-compatible verification for sessions opened
+under the prior negotiation record.
+
 ## 7. Canonical Request Envelope
 
 ### 7.1 Required fields
@@ -435,6 +459,37 @@ Servers SHOULD insert a nonce into the replay cache only after:
 - MAC verification succeeds
 - freshness validation succeeds
 
+### 11.4 Process restart and durable replay state
+
+For each active `session_id`, after any event that clears volatile server
+state (process restart, controlled failover, or equivalent), the server
+MUST either:
+
+- restore replay-detection state sufficient to enforce Section 11.2 for
+  all nonces already accepted under that `session_id`, or
+- invalidate that `session_id` and reject subsequent privileged canonical
+  requests that use it with denial code `session_invalidated`, requiring
+  a new session-establishment flow
+
+An in-memory-only replay cache without durable persistence therefore
+implies that a process restart creates a replay acceptance window unless
+sessions are invalidated, unless a future transport profile defines an
+explicit shorter risk bound (this document does not define one for
+`local-uds-v1`).
+
+### 11.5 Wall-clock freshness and clock steps
+
+Section 11.1 compares wall-clock Unix epoch milliseconds in UTC between
+`timestamp_ms` and server receive time.
+
+Large clock steps (NTP correction, hypervisor time sync, manual
+adjustment, or resume from sleep) MAY cause spurious freshness failures
+for otherwise legitimate requests. Implementations MUST NOT silently widen
+the freshness window to compensate.
+
+Operators recovering from large skew SHOULD establish a new control
+session after wall-clock stabilization.
+
 ## 12. Verification Algorithm
 
 For every privileged request after session establishment, the server
@@ -481,8 +536,9 @@ Field rules:
 - `code`
   - stable denial code such as `unsupported_version`,
     `invalid_envelope`, `integrity_failure`, `replay_detected`,
-    `authorization_failed`, `policy_denied`, `validation_error`,
-    `storage_state_mismatch`, or `unsupported_operation`
+    `session_invalidated`, `authorization_failed`, `policy_denied`,
+    `validation_error`, `storage_state_mismatch`, or
+    `unsupported_operation`
 - `message`
   - operator-safe short text
   - MUST NOT contain secret-bearing values
@@ -545,6 +601,11 @@ underlying append-only event log or object-specific event payloads.
 ## 15. Conformance Test Vectors
 
 This section provides fixed test vectors for independent implementations.
+
+A consolidated helper with UTF-8 hex listings and canonical JSON hashing
+examples lives at [`conformance/test-vectors-v1.md`](../conformance/test-vectors-v1.md).
+If that file disagrees with this section on numeric digests, **this
+section is authoritative**.
 
 ### 15.1 Positive canonical signing vector
 
@@ -614,6 +675,7 @@ The following negative cases are REQUIRED conformance failures:
 | unsupported version | `amp_version` | `2.0` | reject before execution with denial code `unsupported_version` |
 | unsupported profile | `transport_profile` | `local-tcp-v1` | reject before execution with denial code `unsupported_version` |
 | body-hash mismatch | body bytes and `body_sha256` disagree | carry `body_sha256` of `3e9663348715e01175b0bf6bee923d06e8cb153353ff32a63301af6462c40723` but send body bytes hashing to `753c60833eb047be4ed7353fba637bfc63ffaab5c981a8c84ec101efba7cf0b5` | reject before execution with denial code `integrity_failure` |
+| session continuity loss | privileged request after server lost MAC key, negotiation record, or replay state for `session_id` | any syntactically valid envelope for an affected `session_id` | reject before execution with denial code `session_invalidated` (Section 6.5, Section 11.4) |
 
 ## 16. Current Implementation Mapping
 
@@ -641,7 +703,72 @@ The following invariants apply:
 - integrity failure never falls back to permissive behavior
 - denial and event envelopes remain typed and minimal
 
-## 18. Future Work
+## 18. Implementation Divergence Notes (Non-Normative)
+
+This section records known divergences between the normative spec above
+and the current Loopgate reference implementation as of 2026-03-25.
+These notes exist so implementers know what to expect when reading the
+Loopgate source code and so the project can track convergence.
+
+This section is non-normative. The normative text in Sections 5–17
+defines the target protocol behavior.
+
+### 18.1 Canonical signing payload
+
+The current Loopgate signing payload is a `\n`-joined string of six
+fields:
+
+```text
+method\npath\nsession_id\ntimestamp\nnonce\nbody_sha256
+```
+
+This omits the `amp-request-v1` header line, the `amp-version`,
+`transport-profile`, `token-binding`, and `mac-algorithm` fields, and
+the `field-name:` label prefixes required by Section 9.1.
+
+Convergence target: align the signing payload to the exact Section 9.1
+format before claiming AMP `local-uds-v1` conformance.
+
+### 18.2 Timestamp format
+
+Loopgate uses RFC 3339 timestamps (`2026-03-25T12:00:00.123Z`). The
+spec requires unsigned decimal Unix epoch milliseconds (Section 8.6).
+
+### 18.3 Nonce format and entropy
+
+Loopgate generates 12 random bytes hex-encoded (24 hex characters).
+The spec requires base64url without padding encoding of at least 16
+raw bytes (Section 8.7).
+
+### 18.4 MAC output encoding
+
+Loopgate encodes the HMAC output as lowercase hexadecimal. The spec
+requires base64url without padding (Section 10.2).
+
+### 18.5 Token binding
+
+Loopgate does not include the scoped capability token in the MAC
+computation. The spec requires `token_binding` as
+`sha256:<hex of token octets>` (Section 8.5).
+
+### 18.6 Freshness window
+
+Loopgate uses a 120-second skew window. The spec default is 60 seconds
+(Section 11.1).
+
+### 18.7 Version and profile negotiation
+
+Loopgate does not implement `amp_version` or `transport_profile`
+negotiation during session establishment. Sessions are not bound to a
+negotiated version/profile pair.
+
+### 18.8 Denial and event envelope shapes
+
+Loopgate uses product-specific response types (`CapabilityResponse`,
+`ledger.Event`) rather than the minimal denial and event envelopes
+defined in Sections 13–14.
+
+## 19. Future Work
 
 Future AMP RFCs should define:
 

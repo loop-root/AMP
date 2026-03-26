@@ -67,7 +67,8 @@ conventions apply:
 
 - object fields are shown using JSON-like notation for compactness
 - field order inside these compact objects is not semantically
-  significant unless another RFC defines canonical bytes for that object
+  significant on the wire unless Section 5.1 canonical JSON is used for
+  hashing, or another RFC defines canonical bytes for that object
 - timestamps use Unix epoch milliseconds in UTC and end in `_at_ms` or
   `_ms`
 - SHA-256 fields use 64 lower-case hexadecimal characters unless a field
@@ -78,6 +79,44 @@ conventions apply:
   a concrete value does not exist
 - opaque identifiers remain opaque and MUST NOT be interpreted as
   self-describing authority
+
+### 5.1 Canonical JSON for stable hashing
+
+When an implementation computes a cryptographic hash over a compact
+`denial` or `event` object for audit chains, cross-runtime verification,
+or tamper-evidence metadata, it MUST serialize using **canonical JSON**
+defined as follows:
+
+- Output is UTF-8.
+- The root value is a JSON object (not an array at the root).
+- Object keys are sorted recursively in ascending lexicographic order by
+  Unicode scalar value (for keys composed only of ASCII letters, digits,
+  and `_`, this is ASCII sort order).
+- After key sorting, objects serialize as `{` then comma-separated
+  `"<key>":<value>` pairs in key order, then `}` with no space after
+  `:` or `,`.
+- Arrays preserve element order as defined by the object being hashed.
+- No insignificant whitespace is permitted.
+- `false`, `true`, and `null` are lower-case JSON literals.
+- Numbers are JSON numbers with no leading `+`. Integer values MUST not
+  use a fraction or exponent part.
+- Strings follow JSON escaping rules. For conformance with this RFC’s
+  test vectors, `/` MUST NOT be escaped as `\/`.
+
+Field order in Sections 6 and 7 is documentation-only unless an
+implementation applies Section 5.1.
+
+#### 5.1.1 Worked digests (conformance helpers)
+
+For the minimal `denial` example in Section 6 (field values exactly as
+shown there), the canonical JSON byte sequence has SHA-256:
+
+- `60df78ff5084e2cb9bb7db4e569988cb18ec9f9f1aefa43fbacef7d84b482c8b`
+
+For the minimal `event` example in Section 7 (field values exactly as
+shown there), the canonical JSON byte sequence has SHA-256:
+
+- `d584de63d0adc5fc2b07dfcc1b1bead89a697f932ac6a8b02aa861e76cdbe135`
 
 ## 6. Denial Envelope
 
@@ -123,6 +162,7 @@ Examples include:
 - `invalid_envelope`
 - `integrity_failure`
 - `replay_detected`
+- `session_invalidated`
 - `authorization_failed`
 - `policy_denied`
 - `validation_error`
@@ -131,6 +171,7 @@ Examples include:
 - `approval_manifest_mismatch`
 - `approval_decision_nonce_reuse`
 - `approval_state_conflict`
+- `approval_not_pending`
 - `approval_expired`
 - `approval_revoked`
 

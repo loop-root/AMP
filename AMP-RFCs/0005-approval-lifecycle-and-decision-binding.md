@@ -150,6 +150,7 @@ execution-method:<execution_method>
 execution-path:<execution_path>
 execution-body-sha256:<execution_body_sha256>
 approval-scope:<approval_scope>
+created-at-ms:<created_at_ms>
 expires-at-ms:<expires_at_ms>
 ```
 
@@ -181,6 +182,8 @@ The following rules apply:
   - exact SHA-256 of the action body bytes the approval authorizes
 - `approval_scope`
   - fixed value `single-use` for approval lifecycle v1
+- `created_at_ms`
+  - absolute approval creation time in Unix epoch milliseconds UTC
 - `expires_at_ms`
   - absolute approval expiry time in Unix epoch milliseconds UTC
 
@@ -346,6 +349,17 @@ Concurrent decision rules:
 - a different decision against a non-`pending` approval MUST be rejected
   with denial code `approval_state_conflict`
 
+When an `approval_id` refers to an approval object that exists but is not
+in a `pending` decision state, and the request is not an exact idempotent
+retry of a prior accepted decision, the server SHOULD reject with denial
+code `approval_not_pending` unless a more specific code applies (for
+example `approval_expired`, `approval_revoked`, or
+`approval_manifest_mismatch`).
+
+Clients that display approval UIs MUST tolerate this denial and refresh
+authoritative approval state rather than treating it as an unexpected
+transport error.
+
 ### 10.5 Approval race matrix
 
 The following matrix is normative for common race and duplicate-delivery
@@ -360,6 +374,7 @@ cases:
 | decision nonce replay | exact same `approval_id` and `decision_nonce` with identical payload is idempotent | return stored prior result without a second transition or second winning event |
 | decision nonce reuse with different payload | semantic replay conflict | reject with `approval_decision_nonce_reuse` |
 | different nonces after terminal consumption | terminal state already reached | reject with `approval_state_conflict` |
+| stale UI / decision after terminal state | approval no longer accepts a decision | reject with `approval_not_pending` unless `approval_state_conflict` applies to a concurrent competing decision |
 | duplicate delivery of the same request | idempotency keyed by `approval_id` plus `decision_nonce` | return stored prior result without a second transition |
 | arrival after underlying subject mismatch | subject no longer matches stored `subject_binding` | reject with `approval_manifest_mismatch` or revocation-derived denial before consumption |
 
@@ -427,6 +442,7 @@ Approval lifecycle v1 relies on the general denial envelope from RFC
 - `approval_manifest_mismatch`
 - `approval_decision_nonce_reuse`
 - `approval_state_conflict`
+- `approval_not_pending`
 - `approval_expired`
 - `approval_revoked`
 
