@@ -140,9 +140,6 @@ integrity wording conflicts.
 
 ## Reference implementations
 
-- **[Morph / Loopgate](https://github.com/loop-root/morph)**  
-  full product implementation of the local control-plane model. This is
-  implementation-specific, not the neutral protocol spec.
 - **[Python reference implementation](./reference/python/README.md)**  
   canonical envelope serialization, signing, verification, canonical
   JSON helpers, and tests against the published conformance vectors.
