@@ -172,8 +172,6 @@ known gaps that may block a full claim.
 - **Here (this repo):** neutral names, transport profile, object model,
   integrity, approvals, memory authority, capability execution,
   conformance helpers, and reference implementations.
-- **Elsewhere in Morph:** Haven operator UX, Loopgate routes,
-  product-specific RFCs, threat model, setup, and operator workflows.
 
 ## Contributing
 
